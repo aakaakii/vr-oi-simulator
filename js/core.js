@@ -238,13 +238,16 @@ function loadViewSettings(){
     if (typeof o.shake === 'boolean') shakeEnabled = o.shake;
     if (typeof o.vol === 'number')    audio.volume = clamp(o.vol, 0, 1);
     if (typeof o.muted === 'boolean') audio.muted  = o.muted;
+    if (o.quality === 'auto' || Object.prototype.hasOwnProperty.call(QUALITY_PRESETS,o.quality)) qualityPreference = o.quality;
+    if (['auto','webgl','canvas'].includes(o.renderer)) rendererPreference = o.renderer;
   } catch(e){}
 }
 function saveViewSettings(){
   try {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify({
       sens: mouseSens, smooth: smoothAmount, time: timeScale,
-      vol: audio.volume, muted: audio.muted, shake: shakeEnabled
+      vol: audio.volume, muted: audio.muted, shake: shakeEnabled,
+      quality: qualityPreference, renderer: rendererPreference
     }));
   } catch(e){}
 }

@@ -7,6 +7,9 @@
    视角 / 玩家
    ========================================================= */
 function applyLook(dt){
+  /* 指针锁定不可用时仍可用方向键或右键拖动转头。 */
+  yawTarget += ((state.keys.lookLeft ? 1 : 0) - (state.keys.lookRight ? 1 : 0)) * dt * 1.8;
+  pitchTarget += ((state.keys.lookUp ? 1 : 0) - (state.keys.lookDown ? 1 : 0)) * dt * 1.4;
   /* 出拳回弹衰减：命中时 kickView 注入的视觉偏移平滑归零 */
   const kr = 1 - Math.exp(-dt * 11);
   recoilPitch += (0 - recoilPitch) * kr;
@@ -33,6 +36,7 @@ function applyLook(dt){
 const LOOK_VIEWS = new Set(['world']);   // 仅世界视图捕获鼠标（走廊/IDE/面板一律释放）
 const MAX_MOUSE_STEP = 80;               // 单次位移钳制（px），防异常跳变
 let pointerLocked = false;
+let dragLookPoint = null;
 let lastLockAt = 0;
 
 function lockElement(){
@@ -58,6 +62,7 @@ function releaseLock(){
 
 const KEYMAP = {
   KeyW: 'w', KeyA: 'a', KeyS: 's', KeyD: 'd',
+  ArrowLeft:'lookLeft', ArrowRight:'lookRight', ArrowUp:'lookUp', ArrowDown:'lookDown',
   ShiftLeft: 'shift', ShiftRight: 'shift',
 };
 
@@ -167,9 +172,7 @@ function kickView(pitchAmt, yawAmt){
 /* =========================================================
    小地图
    ========================================================= */
-let mmFrameSkip = 0;
 function drawMinimap(){
-  if (++mmFrameSkip % 4 !== 0) return;
   const c = minimap, ctx = mmCtx;
   const W = c.width, H = c.height;
   ctx.fillStyle = 'rgba(10,13,20,.85)';

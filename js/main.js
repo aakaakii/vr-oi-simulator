@@ -6,7 +6,14 @@
 /* =========================================================
    事件绑定
    ========================================================= */
-function bindEvents(){
+function bindSceneEvents(){
+  renderer.domElement.addEventListener('contextmenu',e => { if (canLockView()) e.preventDefault(); });
+  renderer.domElement.addEventListener('mousedown',e => {
+    if (e.button === 2 && !pointerLocked && canLockView()){
+      dragLookPoint = { x:e.clientX, y:e.clientY };
+      e.preventDefault();
+    }
+  });
   /* 左键交互；未锁定时点击画面重新捕获鼠标，不触发交互 */
   renderer.domElement.addEventListener('click', () => {
     if (!state.started || state.ended) return;
@@ -21,6 +28,11 @@ function bindEvents(){
        时执行攻击，否则执行普通交互 */
     doInteract(actionSpace ? 'space' : 'e');
   });
+}
+
+function bindEvents(){
+  bindSceneEvents();
+  bindGraphicsEvents();
 
   document.addEventListener('keydown', e => {
     /* 走廊 */
@@ -72,7 +84,7 @@ function bindEvents(){
     const k = KEYMAP[e.code];
     if (k){
       state.keys[k] = true;
-      if ('wasd'.includes(k)) e.preventDefault();
+      if ('wasd'.includes(k) || k.startsWith('look')) e.preventDefault();
     }
     if (e.code === 'KeyE'){
       /* 弹窗优先：E 用来点按钮，不作用于场景 */
@@ -104,7 +116,12 @@ function bindEvents(){
     if (k) state.keys[k] = false;
   });
 
-  window.addEventListener('blur', () => { state.keys = {}; });
+  window.addEventListener('blur', () => { state.keys = {}; dragLookPoint = null; });
+  document.addEventListener('mouseup', () => { dragLookPoint = null; });
+  document.addEventListener('visibilitychange', () => {
+    /* 恢复可见后的首帧包含后台停留时间，不用它判断设备性能。 */
+    qualitySampleTime = 0; qualitySampleFrames = 0; qualityWarmup = 2;
+  });
 
   /* ---------- 指针锁定 ---------- */
   document.addEventListener('pointerlockchange', () => {
@@ -114,16 +131,17 @@ function bindEvents(){
     else if (state.view === 'world' && state.started && !state.ended) openPauseMenu();
   });
   document.addEventListener('pointerlockerror', () => {
-    if (canLockView()) toast('鼠标锁定失败，点击画面重试。', 1600);
+    if (canLockView()) toast('可按住右键拖动或用方向键转动视角。', 2200);
   });
   /* 鼠标位移 → 视角目标角，平滑由 applyLook 完成 */
   document.addEventListener('mousemove', e => {
-    if (pointerLocked){
+    if (pointerLocked || (dragLookPoint && canLockView())){
       if (!LOOK_VIEWS.has(state.view)) return;
       /* 锁定瞬间浏览器可能补发一次巨大位移，忽略前 120ms 内的事件 */
-      if (performance.now() - lastLockAt < 120) return;
-      const mx = clamp(e.movementX || 0, -MAX_MOUSE_STEP, MAX_MOUSE_STEP);
-      const my = clamp(e.movementY || 0, -MAX_MOUSE_STEP, MAX_MOUSE_STEP);
+      if (pointerLocked && performance.now() - lastLockAt < 120) return;
+      const mx = clamp(pointerLocked ? e.movementX || 0 : e.clientX-dragLookPoint.x, -MAX_MOUSE_STEP, MAX_MOUSE_STEP);
+      const my = clamp(pointerLocked ? e.movementY || 0 : e.clientY-dragLookPoint.y, -MAX_MOUSE_STEP, MAX_MOUSE_STEP);
+      if (dragLookPoint) dragLookPoint = { x:e.clientX, y:e.clientY };
       yawTarget   -= mx * mouseSens * SENS_SCALE;   // 鼠标右移 → 向右转身
       pitchTarget -= my * mouseSens * SENS_SCALE;   // 鼠标下移 → 低头
       pitchTarget = clamp(pitchTarget, -1.35, 1.35);
@@ -141,6 +159,7 @@ function bindEvents(){
     resizeTimer = setTimeout(() => {
       camera.aspect = innerWidth / innerHeight;
       camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,graphicsProfile().dpr));
       renderer.setSize(innerWidth, innerHeight);
       resizePostFX();
       forceRedraw = true;
@@ -296,11 +315,13 @@ function bindEvents(){
    ========================================================= */
 let lastInteractUpdate = 0;
 let forceRedraw = false;
+let lastFrameAt = null;
+let lastMinimapAt = 0;
 let hitStop = 0;                // 命中顿帧剩余时间（出拳命中时置位）
 let worldTimeScale = 1;         // 全局世界时间倍率（通报弹窗期间的子弹时间）
 let slowMoDlg = null;           // 引发慢放的弹窗；它一消失就恢复原速
 
-/* 世界时间步长：顿帧 × 全局慢放。考试计时（state.elapsed）用 realDt，
+/* 世界时间步长：顿帧 × 全局慢放。考试计时（state.elapsed）用 elapsedDt，
    不受这里影响——慢的是世界，不是钟。 */
 function worldDtFor(realDt){
   const hs = hitStop > 0 ? 0.12 : 1;
@@ -321,13 +342,21 @@ const VIEW_NO_RENDER = new Set([
   'code','paper','corridor','bathroom','npcComputer','ending','pause'
 ]);
 
-function animate(){
+function animate(frameAt){
   requestAnimationFrame(animate);
-  const realDt = Math.min(clock.getDelta(), 0.1);
+  const now = frameAt === undefined ? performance.now() : frameAt;
+  const interval = 1000 / graphicsProfile().fps;
+  if (document.hidden) return;
+  if (!forceRedraw && lastFrameAt !== null && now - lastFrameAt < interval - 0.5) return;
+  lastFrameAt = now - (lastFrameAt === null ? 0 : (now - lastFrameAt) % interval);
+  if ((!state.started || state.ended) && !forceRedraw) return;
+  const elapsedDt = clock.getDelta();
+  const realDt = Math.min(elapsedDt, 0.1);
+  sampleGraphicsPerformance(elapsedDt);
   const t = performance.now() * 0.001;
 
   if (state.started && !state.ended){
-    state.elapsed += realDt * timeScale;
+    state.elapsed += elapsedDt * timeScale;
     if (state.elapsed >= CONTEST_LEN) endContest(false);
   }
 
@@ -362,7 +391,7 @@ function animate(){
   if (state.doorOpen) updateDoorLight(realDt);
 
   /* 世界逻辑：只在世界视图下运行，避免在 IDE / 草稿纸里空跑 NPC 与 AI */
-  if (inWorld){
+  if (inWorld && state.started && !state.ended){
     updateNPCs(worldDt, t);
 
     /* 老师 AI */
@@ -481,7 +510,10 @@ function animate(){
     const tn = getTension();
     hudTimer.classList.toggle('tense', tn > 0.05);
     minimapWrap.classList.toggle('tense', tn > 0.05);
-    drawMinimap();
+    if (now - lastMinimapAt >= (activeQuality === 'low' ? 150 : 66)){
+      drawMinimap();
+      lastMinimapAt = now;
+    }
   }
 
   /* 关键优化：IDE / 草稿纸 / 走廊等视图下跳过渲染 */
@@ -498,14 +530,7 @@ function init(){
   loadViewSettings();
   syncViewUI();
 
-  renderer = new THREE.WebGLRenderer({
-    canvas: $('scene'),
-    antialias: true,
-    powerPreference: 'high-performance'
-  });
-  /* DPR 上限改为 1.5：视觉差异极小，但填充率大幅下降 */
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
-  renderer.setSize(innerWidth, innerHeight);
+  renderer = createSceneRenderer();
   if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
 
   scene = new THREE.Scene();
@@ -527,9 +552,9 @@ function init(){
   updateAllDeskScreens();
   initReticle();
   /* 氛围系统：拖影后处理（可失败回退）/ 保安警灯 / 紧张值 */
-  initPostFX();
   initGuardLights();
   initTension();
+  applyGraphicsQuality();
   initHp();
   bindEvents();
   initPaperEvents();

@@ -53,6 +53,7 @@ const POST_BLIT_FRAG = `
   }`;
 
 function initPostFX(){
+  if (renderer.isCanvasRenderer || !graphicsProfile().post) return false;
   try {
     const dpr = renderer.getPixelRatio ? renderer.getPixelRatio() : 1;
     const w = Math.max(1, Math.floor(innerWidth * dpr));
@@ -93,9 +94,20 @@ function initPostFX(){
     postOK = true;
     postPrimed = false;
   } catch(e){
-    postOK = false;
+    disposePostFX();
   }
   return postOK;
+}
+
+function disposePostFX(){
+  for (const resource of [rtFrame,rtAccA,rtAccB,blendMat,blitMat]){
+    if (resource) resource.dispose();
+  }
+  if (postQuad) postQuad.geometry.dispose();
+  rtFrame = rtAccA = rtAccB = null;
+  postScene = postCamera = postQuad = blendMat = blitMat = null;
+  postOK = false;
+  postPrimed = false;
 }
 
 /* 紧张值 → 拖影强度 */

@@ -37,13 +37,32 @@
     比赛时长 <b>4 小时</b>，共 <b>4 道题</b>，满分 <b>400 分</b>。<br><br>
     <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动 &nbsp;·&nbsp;
     <kbd>Shift</kbd> 疾走 &nbsp;·&nbsp; <kbd>空格</kbd> 跳跃 &nbsp;·&nbsp;
-    <b>移动鼠标</b> 转动视角（FPS 视角锁定）<br>
+    <b>移动鼠标</b> 转动视角（FPS 视角锁定）；也可<b>右键拖动 / 方向键</b>转头<br>
     <kbd>E</kbd> 或 <kbd>鼠标左键</kbd> 交互（电脑 · 草稿纸 · 水杯 · 出门）；<br>
     <kbd>鼠标左键</kbd> 出拳：需<b>正面对准</b>目标，一拳扫倒拳锋范围内全部敌人<br>
     <kbd>F</kbd> 干扰同学 &nbsp;·&nbsp;
     <kbd>H</kbd> 举手呼叫监考 &nbsp;·&nbsp; <kbd>Esc</kbd> 释放鼠标 / 打开设置<br><br>
     弹窗操作：<b>视线停留 1 秒</b>自动确认，也可直接左键点击。<br><br>
 
+    <div class="set-title">画质与兼容性</div>
+    <div class="setting-row">
+      <label for="qualitySelectStart">画质</label>
+      <select id="qualitySelectStart">
+        <option value="auto">自动（推荐）</option>
+        <option value="high">高</option>
+        <option value="medium">中</option>
+        <option value="low">低（流畅优先）</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <label for="rendererSelectStart">渲染模式</label>
+      <select id="rendererSelectStart">
+        <option value="auto">自动（推荐）</option>
+        <option value="webgl">WebGL</option>
+        <option value="canvas">Canvas 兼容模式</option>
+      </select>
+    </div>
+    <p class="setting-hint" id="graphicsStatusStart" role="status"></p>
     <div class="set-title">视角手感调校</div>
     <div class="setting-row">
       <label>鼠标灵敏度</label>
@@ -83,7 +102,26 @@
   <div class="pbox">
     <h2>设置</h2>
     <div class="sub">比赛时间不会因为打开这个面板而暂停。</div>
-    <div class="set-title" style="border-top:none;margin-top:10px;padding-top:0">视角手感</div>
+    <div class="set-title" style="border-top:none;margin-top:10px;padding-top:0">画质与兼容性</div>
+    <div class="setting-row">
+      <label for="qualitySelect">画质</label>
+      <select id="qualitySelect">
+        <option value="auto">自动（推荐）</option>
+        <option value="high">高</option>
+        <option value="medium">中</option>
+        <option value="low">低（流畅优先）</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <label for="rendererSelect">渲染模式</label>
+      <select id="rendererSelect">
+        <option value="auto">自动（推荐）</option>
+        <option value="webgl">WebGL</option>
+        <option value="canvas">Canvas 兼容模式</option>
+      </select>
+    </div>
+    <p class="setting-hint" id="graphicsStatus" role="status"></p>
+    <div class="set-title">视角手感</div>
     <div class="setting-row">
       <label>鼠标灵敏度</label>
       <input type="range" id="turnSlider" min="1" max="20" value="10">
@@ -268,6 +306,8 @@ if (typeof THREE === 'undefined'){
 <script src="js/npc-gen.js"></script>
 <script src="js/problems.js"></script>
 <script src="js/core.js"></script>
+<script src="js/canvas-renderer.js"></script>
+<script src="js/graphics.js"></script>
 <script src="js/dialog3d.js"></script>
 <script src="js/feedback.js"></script>
 <script src="js/hp.js"></script>

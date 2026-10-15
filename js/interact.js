@@ -138,7 +138,7 @@ function updateInteract(){
   /* 兜底提示：没有任何可交互/可攻击目标时，才提醒重新捕获鼠标。
      注意动作判定不依赖指针锁定——锁定失效时 E / 左键依然能交互和出拳。 */
   if (!pointerLocked && !actionE && !actionF && !actionSpace){
-    const txt = '鼠标已释放 —— 点击画面继续考试';
+    const txt = '点击画面锁定鼠标 · 也可右键拖动或用方向键转动视角';
     if (lastInteractKey !== txt){ promptEl.textContent = txt; lastInteractKey = txt; }
     promptEl.classList.remove('hidden');
   }

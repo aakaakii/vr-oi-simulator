@@ -11,6 +11,15 @@
   canvas{display:block;}
   #scene{position:fixed;inset:0;}
   .hidden{display:none !important;}
+  .setting-row select{
+    min-width:180px;max-width:65%;padding:7px 10px;border:1px solid #394152;
+    border-radius:6px;background:#171d29;color:var(--fg);font:inherit;
+  }
+  .setting-row select:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .setting-hint{font-size:12px;line-height:1.7;color:var(--dim);text-align:left;}
+  body[data-quality="low"] #scene{filter:none !important;}
+  body[data-quality="low"] #tenseVignette{display:none;}
+  body[data-quality="low"] *{backdrop-filter:none !important;}
 
   /* ---------- 开始界面 ---------- */
   #start{

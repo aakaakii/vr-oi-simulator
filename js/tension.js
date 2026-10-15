@@ -92,7 +92,7 @@ function applyTension(t, dt){
 
   /* 1. 整体调色：压暗 + 对比度 + 去饱和（只作用于 WebGL 画面，不污染 HUD） */
   if (cvs){
-    cvs.style.filter = t < 0.01 ? '' :
+    cvs.style.filter = !graphicsProfile().effects || t < 0.01 ? '' :
       'contrast(' + (1 + 0.24 * t).toFixed(3) + ') ' +
       'saturate(' + (1 - 0.30 * t).toFixed(3) + ') ' +
       'brightness(' + (1 - 0.26 * t).toFixed(3) + ')';

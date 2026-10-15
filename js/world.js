@@ -22,6 +22,7 @@ function buildRoom(){
     mat(0x22262e, { roughness: 0.96 })
   );
   floor.rotation.x = -Math.PI / 2;
+  floor.userData.canvasBackground = true;
   scene.add(floor);
 
   const gridHelper = new THREE.GridHelper(W, 16, 0x2e3442, 0x2a2f3b);
@@ -33,12 +34,14 @@ function buildRoom(){
     mat(0x171b23, { roughness: 1 })
   );
   ceil.rotation.x = Math.PI / 2;
+  ceil.userData.canvasBackground = true;
   ceil.position.y = H;
   scene.add(ceil);
 
   const wallMat = mat(0x2b313d, { roughness: 0.92 });
   const mkWall = (w, h, x, y, z, ry) => {
     const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat);
+    m.userData.canvasBackground = true;
     m.position.set(x, y, z); m.rotation.y = ry; scene.add(m);
   };
   mkWall(W, H,  0, H/2, -D/2, 0);
@@ -324,6 +327,7 @@ function buildDesk(x, z, withMonitor){
       })
     );
     glowPanel.position.set(0, 1.26, -0.06);
+    glowPanel.userData.qualityDetail = true;
     g.add(glowPanel);
 
     /* 键盘 */
@@ -532,9 +536,11 @@ function buildSecurityGuard(x, z){
     })
   );
   glow.position.set(0, 1.84, 0.02);
+  glow.userData.qualityDetail = true;
   g.add(glow);
 
   addContactShadow(g, 0.58);
+  applyQualityToObject(g);
 
   return {
     group: g, armL, armR, head, warnLight,
@@ -575,6 +581,7 @@ function addContactShadow(parent, radius){
   m.position.y = 0.012;
   m.scale.set(radius * 2, radius * 2, 1);
   m.renderOrder = 1;
+  m.userData.qualityDetail = true;
   parent.add(m);
   contactShadows.push(m);
   return m;

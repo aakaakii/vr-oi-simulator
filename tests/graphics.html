@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>画质与兼容性回归测试</title>
+<style>
+  body{background:#10141c;color:#d7dce8;font:15px/1.7 system-ui;margin:24px}
+  .pass{color:#6ee7a5}.fail{color:#ff8c94}
+  iframe{width:960px;height:600px;border:1px solid #394152}
+</style>
+<h1>画质与兼容性回归测试</h1>
+<p>通过本地 HTTP 服务打开此页。测试复用游戏脚本，模拟 WebGL 不可用，并在可用时验证真实 WebGL；结束后恢复本地设置与存档。</p>
+<ol id="results"></ol>
+<p id="summary">测试中……</p>
+<script src="graphics.js"></script>
+</html>

@@ -207,12 +207,19 @@ function spawnBodyDebris(group, opt){
   group.updateMatrixWorld(true);
 
   const parts = [];
-  group.traverse(o => { if (o.isMesh) parts.push(o); });
+  group.traverseVisible(o => { if (o.isMesh && !o.userData.qualityDetail) parts.push(o); });
+  const profile = graphicsProfile();
+  const stride = Math.max(1, Math.ceil(parts.length / profile.perHit));
+  let partIndex = 0;
 
   /* 视线前向（用于计算每个部件的视角偏移量） */
   _dbFwd.set(0, 0, -1).applyQuaternion(camera.quaternion).normalize();
 
   for (const p of parts){
+    if (partIndex++ % stride !== 0){
+      if (p.parent) p.parent.remove(p);
+      continue;
+    }
     p.updateWorldMatrix(true, false);
     p.matrixWorld.decompose(_dbPos, _dbQuat, _dbScl);
 
@@ -264,6 +271,16 @@ function spawnBodyDebris(group, opt){
 
     /* 从角色身上摘掉该部件：打爆即分离，不再跟随角色动画 */
     if (p.parent) p.parent.remove(p);
+  }
+  trimDebris(profile.debris);
+}
+
+/* 跨目标共用碎块预算，避免一拳扫倒多人后 CPU/显存持续膨胀。 */
+function trimDebris(limit){
+  while (debrisList.length > limit){
+    const d = debrisList.shift();
+    scene.remove(d.mesh);
+    d.mat.dispose();
   }
 }
 
